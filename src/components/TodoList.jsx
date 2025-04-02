@@ -18,6 +18,7 @@ const TodoList = () => {
         setNextId(nextId + 1);
         setInputValue('');
         // toast.success('Task added successfully');
+
     };
 
     const handleTaskCheckboxChange = (taskId) => {
