@@ -1,19 +1,28 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { ToastContainer, toast, Zoom } from 'react-toastify';
 
 const TodoList = () => {
-    const [tasks, setTasks] = useState([]);
+    const [tasks, setTasks] = useState(() => {
+        const savedTasks = localStorage.getItem('tasks');
+        return savedTasks ? JSON.parse(savedTasks) : [];
+    });
     const [inputValue, setInputValue] = useState('');
     const [filter, setFilter] = useState('all');
     const [editTaskId, setEditTaskId] = useState(null);
-    const [nextId, setNextId] = useState(1);
+    const [nextId, setNextId] = useState(() => {
+        const savedTasks = localStorage.getItem('tasks');
+        const parsedTasks = savedTasks ? JSON.parse(savedTasks) : [];
+        return parsedTasks
+    });
 
     const handleInputChange = (event) => setInputValue(event.target.value);
 
     const handleAddTask = () => {
         if (inputValue.trim() === '') return;
         const newTask = { id: nextId, title: inputValue, completed: false };
-        setTasks((prevTasks) => [...prevTasks, newTask]);
+        const updatedTasks = [...tasks, newTask];
+        setTasks(updatedTasks);
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
         setNextId(nextId + 1);
         setInputValue('');
         toast.success('Added task successfully', {
@@ -30,16 +39,17 @@ const TodoList = () => {
     };
 
     const handleTaskCheckboxChange = (taskId) => {
-        setTasks((prevTasks) =>
-            prevTasks.map((task) =>
-                task.id === taskId ? { ...task, completed: !task.completed } : task
-            )
+        const updatedTasks = tasks.map((task) =>
+            task.id === taskId ? { ...task, completed: !task.completed } : task
         );
+        setTasks(updatedTasks);
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
     };
 
-
     const handleDeleteTask = (taskId) => {
-        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+        const updatedTasks = tasks.filter((task) => task.id !== taskId);
+        setTasks(updatedTasks);
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
         toast.warn('Deleted task successfully', {
             position: "top-center",
             autoClose: 3000,
@@ -61,11 +71,11 @@ const TodoList = () => {
 
     const handleUpdateTask = () => {
         if (inputValue.trim() === '') return;
-        setTasks((prevTasks) =>
-            prevTasks.map((task) =>
-                task.id === editTaskId ? { ...task, title: inputValue } : task
-            )
+        const updatedTasks = tasks.map((task) =>
+            task.id === editTaskId ? { ...task, title: inputValue } : task
         );
+        setTasks(updatedTasks);
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
         setInputValue('');
         setEditTaskId(null);
         toast.success('Updated task successfully', {
@@ -82,39 +92,48 @@ const TodoList = () => {
     };
 
     const handleCompleteAll = () => {
-        setTasks((prevTasks) => prevTasks.map((task) => ({ ...task, completed: true })));
+        const updatedTasks = tasks.map((task) => ({ ...task, completed: true }));
+        setTasks(updatedTasks);
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
     };
 
     const handleClearCompleted = () => {
-        setTasks((prevTasks) => prevTasks.filter((task) => !task.completed));
+        const updatedTasks = tasks.filter((task) => !task.completed);
+        setTasks(updatedTasks);
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
     };
 
     const handleFilterChange = (filterType) => setFilter(filterType);
+
+    // Enter কী হ্যান্ডলার ফাংশন
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            editTaskId ? handleUpdateTask() : handleAddTask();
+        }
+    };
 
     const filteredTasks = tasks.filter((task) => {
         if (filter === 'all') return true;
         if (filter === 'completed') return task.completed;
         if (filter === 'uncompleted') return !task.completed;
-        return ;
+        return true;
     });
 
     return (
         <div className="w-full min-h-screen bg-indigo-700 p-5">
-
             <div className="w-full max-w-3xl bg-white border-2 border-black mx-auto mt-24 mb-5 p-10 pb-16 rounded-2xl">
                 <h2 className="flex items-center justify-center text-blue-600 mb-5">
                     <span className='text-4xl'>Todos List</span>
-
                 </h2>
 
                 <div className="flex items-center justify-between bg-slate-200 rounded-2xl mb-6">
-
                     <input
                         type="text"
                         placeholder="Add your todo"
                         autoFocus
                         value={inputValue}
                         onChange={handleInputChange}
+                        onKeyDown={handleKeyDown} // Enter কী হ্যান্ডলার যোগ করা
                         className="flex-1 border-none outline-none bg-transparent p-5"
                     />
                     <button
@@ -143,7 +162,6 @@ const TodoList = () => {
                                     className="w-5 h-5 m-2"
                                 />
                                 {task.title}
-
                             </div>
                             <div className="flex items-center">
                                 <img
